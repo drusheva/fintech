@@ -1,0 +1,7 @@
+#!/bin/bash
+ntbrun=$(ps aux | grep httpd | grep -v grep| grep -v 'go_httpd_go'|wc -l)
+if [ "$ntbrun" -eq 0 ]
+then
+./httpd &
+echo "$(date +%Y-%m-%d-%H-%M) httpd was not running, starting..." >> /root/httpd_start.log
+fi
