@@ -1,0 +1,71 @@
+Задание 1.
+Собственно строка
+uwsgi --plugins=python --http-socket=0.0.0.0:80 --wsgi-file /opt/webcode/former/process/webrunner.py --static-map /form=/opt/webcode/former/form/index.html --processes=5 --master --pidfile=/tmp/formdig.pid --vacuum --max-requests=5000
+
+Задание 2.
+http://s-16.fintech-admin.m1.tinkoff.cloud/form
+
+Задание 3.
+Это если заполнить форму, то перейдет на такую страничку
+Method: POST
+Get content: /process
+Post content: Name=wwww&Age=www
+
+При этом, если обновить данную страницу, то будет такой ответ
+Method: GET
+Get content: /process
+Post content: 
+
+Задание4.
+команды, использумые в процессе подготовки дз 
+mkdir -p /opt/webcode/  - монтирование директории /webcode с вышестоящей /opt
+cp -R /root/homework/materials/class05/src/former /opt/webcode
+ - копирование со всеми подкатологами из одной директории в другую
+
+опции uwsgi, которые задавались при запуске приложения описаны ниже в конфигурационном файле supervisor
+
+файл former.ini - конфигурационный файл supervisor для процесса uwsgi 
+[program:former]
+command=uwsgi  					-что должно запуститься при старте программы supervisor
+    --plugins=python                                                             	 -опция uwsgi - какой плагин запустить
+    --http-socket=0.0.0.0:80				-опция uwsgi -  используется протокол http и ip=0.0.0.0:80
+    --wsgi-file /opt/webcode/former/process/webrunner.py	-опция uwsgi - какой файл надо загрузить
+    --static-map /form=/opt/webcode/former/form/index.html	-опция uwsgi - путь до статичной директории
+    --processes=5					-опция uwsgi - количество процессов
+    --master					-опция uwsgi - включение мастер процесса
+    --pidfile=/tmp/former.pid				-опция uwsgi - создание pid файла
+    --vacuum					-опция uwsgi - чистит всё при завершении процесса (удаляет PID-файлы и прочее)
+    --max-requests=5000				-опция uwsgi - после какого количества запросов перезагружать процессы
+stopsignal=QUIT					-каким сигналом убивать процессы		
+autostart=true					-uwsgi стартует автоматически при запуске supervisor
+startretries=10					- сколько раз supervisor будет пытаться запустить программу до того как выдаст ошибу FATAL
+startsecs=0					-Общее количество секунд, в течение которых программа должна оставаться включенной после запуска, чтобы считать начало успешным.
+						Установите значение 0, чтобы указать, что программа не должна оставаться включенной в течение определенного периода времени.
+stopwaitsecs=10					-Количество секунд ожидания ОС для возврата SIGCHLD к супервизору после того, как программа отправила стопсигнал.
+stopasgroup=true					-при данном варианте supervisor останавливает всю группу процесса(вместе с дочерними)
+stdout_logfile=/var/log/webapps/former_stdout.log		- указание на место хранение логов процесса - вывод
+stdout_logfile_maxbytes=60MB			-максимальный размер хранилища логов
+stdout_logfile_backups=4				-Количество резервных копий stdout_logfile
+stdout_capture_maxbytes=4MB			-Максимальное количество байтов, отображаемых на FIFO, когда процесс находится в режиме «stdout capture»,
+
+stderr_logfile=/var/log/webapps/former_stderr.log		-место хранения stderr_logfile - ошибки
+stderr_logfile_maxbytes=60MB			-максимальный размер хранилища логов
+stderr_logfile_backups=4				-Количество резервных копий stderr_logfile
+stderr_capture_maxbytes=4MB			-Максимальное количество байтов, отображаемых на FIFO, когда процесс находится в режиме "stderr capture»,
+
+__________________________________________________________________________________________________________________________________
+webrunner.py
+#!/usr/bin/python
+
+from cgi import parse_qs  				 - из интрефейса cgi взять parse_qs(парсер строк)
+
+def application(env, start_response):  			-создаем ФУНКЦИЮ application с 2я входными параметрами: окружение и изначальный запрос
+    start_response('200 OK', [('Content-Type','text/plain')])	- описываем старторый запрос
+
+    wsgi_content = env["wsgi.input"].read(0)		-при помощи чего читаем тело запроса -при помощи wsgi.input
+    request_uri_content = env["REQUEST_URI"]		- связываем наши полные HTTP запросы откуда и что
+    request_method_content = env["REQUEST_METHOD"]	-каким методом обрабатываем запросы
+    d = parse_qs(wsgi_content)			-parse_qs парсит  URL , получаемый от wsgi_content
+    return ["Method: " + request_method_content + "\n" +   	-то, что возвращаем в результате на экран
+        "Get content: " + request_uri_content + "\n" +
+        "Post content: " + wsgi_content + "\n"]
